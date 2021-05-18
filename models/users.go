@@ -32,7 +32,7 @@ func Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	if ok, msg := utils.CheckRequestHeader(wantHeader, r.Header); ok && msg == "ok" {
 		var new newUser
 		if err := json.NewDecoder(r.Body).Decode(&new); err != nil {
-			json.NewEncoder(w).Encode(responses.REGISTER_FAIl)
+			json.NewEncoder(w).Encode(responses.REGISTER_FAIL)
 			return
 		}
 		if err := utils.LenGreaterThanZero(new.FirstName, new.LastName, new.Email, new.Password); err != nil {
@@ -109,5 +109,23 @@ func GetSingleUser(userId int) (publicUser, error) {
 		return publicUser{}, err
 	}
 
+	return user, nil
+}
+
+type userCred struct {
+	UserId   uint
+	Password string
+}
+
+func GetUserCredsByEmail(email string) (userCred, error) {
+	query := `select user_id, password from users where email=$1`
+	row := db.QueryRow(query, email)
+
+	var user userCred
+
+	err := row.Scan(&user)
+	if err != nil {
+		return userCred{}, err
+	}
 	return user, nil
 }

@@ -19,9 +19,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	setup()
-
 	log.Println("Server started on port: ", PORT)
+
+	setup()
 }
 
 func setup() {
@@ -31,6 +31,7 @@ func setup() {
 	router.GET("/api/user/:id", controllers.SingleUser)
 
 	router.POST("/api/auth/register", models.Register)
+	router.POST("/api/auth/login", controllers.Login)
 
 	log.Fatalln(http.ListenAndServe(PORT, router))
 }

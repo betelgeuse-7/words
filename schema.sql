@@ -22,7 +22,7 @@ create table user_languages (
     u_lang_id serial primary key,
     lang varchar(100) not null,
     lang_abbr varchar(3) not null,
-    user_ int references users (user_id) not null,
+    user_ int references users (user_id) not null
 );
 
 create table notebooks (
