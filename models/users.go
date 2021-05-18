@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -123,8 +124,9 @@ func GetUserCredsByEmail(email string) (userCred, error) {
 
 	var user userCred
 
-	err := row.Scan(&user)
+	err := row.Scan(&user.UserId, &user.Password)
 	if err != nil {
+		fmt.Println(err)
 		return userCred{}, err
 	}
 	return user, nil

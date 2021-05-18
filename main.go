@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/betelgeuse-7/words/controllers"
+	"github.com/betelgeuse-7/words/middleware"
 	"github.com/betelgeuse-7/words/models"
 
 	// Third party
@@ -27,11 +28,13 @@ func main() {
 func setup() {
 	router := httprouter.New()
 
-	router.GET("/api/users", controllers.AllUsers)
-	router.GET("/api/user/:id", controllers.SingleUser)
+	router.GET("/api/users", middleware.IsLoggedIn(controllers.AllUsers))
+	router.GET("/api/user/:id", middleware.IsLoggedIn(controllers.SingleUser))
 
 	router.POST("/api/auth/register", models.Register)
 	router.POST("/api/auth/login", controllers.Login)
+	// Need to be logged in
+	router.POST("/api/auth/refresh", middleware.IsLoggedIn(controllers.SendTokenPair))
 
 	log.Fatalln(http.ListenAndServe(PORT, router))
 }
