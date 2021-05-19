@@ -34,6 +34,7 @@ func NewToken(userId int, kind string) (string, error) {
 			return "", err
 		}
 		return token, nil
+
 	case "refresh":
 		claims := jwt.MapClaims{
 			"authorized": true,
@@ -48,4 +49,19 @@ func NewToken(userId int, kind string) (string, error) {
 		return token, nil
 	}
 	return "", errors.New("invalid kind")
+}
+
+// return new access and refresh tokens
+// []string{ACCESS_TOKEN, REFRESH_TOKEN}
+func NewTokenPair(userId int) ([]string, error) {
+	newAccessToken, err := NewToken(userId, "access")
+	if err != nil {
+		return nil, err
+	}
+	newRefreshToken, err := NewToken(userId, "refresh")
+	if err != nil {
+		return nil, err
+	}
+
+	return []string{newAccessToken, newRefreshToken}, nil
 }

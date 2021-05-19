@@ -28,13 +28,12 @@ func main() {
 func setup() {
 	router := httprouter.New()
 
-	router.GET("/api/users", middleware.IsLoggedIn(controllers.AllUsers))
-	router.GET("/api/user/:id", middleware.IsLoggedIn(controllers.SingleUser))
+	router.GET("/api/users", middleware.ProtectRoute(controllers.AllUsers))
+	router.GET("/api/user/:id", middleware.ProtectRoute(controllers.SingleUser))
 
 	router.POST("/api/auth/register", models.Register)
 	router.POST("/api/auth/login", controllers.Login)
-	// Need to be logged in
-	router.POST("/api/auth/refresh", middleware.IsLoggedIn(controllers.SendTokenPair))
+	router.POST("/api/auth/refresh", controllers.SendTokenPair)
 
 	log.Fatalln(http.ListenAndServe(PORT, router))
 }
