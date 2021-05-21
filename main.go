@@ -30,6 +30,7 @@ func setup() {
 
 	router.GET("/api/users", middleware.ProtectRoute(controllers.AllUsers))
 	router.GET("/api/user/:id", middleware.ProtectRoute(controllers.SingleUser))
+	router.GET("/api/my_profile", middleware.ProtectRoute(controllers.MyProfile))
 
 	router.POST("/api/auth/register", models.Register)
 	router.POST("/api/auth/login", controllers.Login)

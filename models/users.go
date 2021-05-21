@@ -26,6 +26,11 @@ type publicUser struct {
 	RegisteredAt time.Time `json:"registered_at"`
 }
 
+type userCred struct {
+	UserId   uint
+	Password string
+}
+
 func Register(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	wantHeader := map[string]string{
 		"Content-Type": "application/json",
@@ -111,11 +116,6 @@ func GetSingleUser(userId int) (publicUser, error) {
 	}
 
 	return user, nil
-}
-
-type userCred struct {
-	UserId   uint
-	Password string
 }
 
 func GetUserCredsByEmail(email string) (userCred, error) {

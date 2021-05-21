@@ -5,107 +5,46 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
+	"time"
 
-	"github.com/betelgeuse-7/words/constants"
 	"github.com/betelgeuse-7/words/responses"
 	"github.com/betelgeuse-7/words/utils"
 	"github.com/dgrijalva/jwt-go"
 
-	//
 	"github.com/julienschmidt/httprouter"
 )
 
-/*
-type payload struct {
-	Authorized  bool
-	Exp, UserId uint
-}
-*/
 func SendTokenPair(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	cookies := r.Cookies()
-
 	var oldAccessToken, oldRefreshToken string
-	// Assuming the frontend guy stored cookies by the name ACCESS_TOKEN and REFRESH_TOKEN
-	// He is me, actually.
-	for _, v := range cookies {
-		if v.Name == constants.ACCESS_TOKEN_COOKIE_NAME {
-			oldAccessToken = v.Value
-		}
-		if v.Name == constants.REFRESH_TOKEN_COOKIE_NAME {
-			oldRefreshToken = v.Value
-		}
-	}
-	// Missing token in cookies
-	if err := utils.LenGreaterThanZero(oldAccessToken, oldRefreshToken); err != nil {
+
+	tokens, err := utils.GetTokensFromCookies(r)
+	if err != nil {
+		fmt.Println("oldAccessToken: ", err)
 		w.WriteHeader(401)
 		return
 	}
 
+	oldAccessToken, oldRefreshToken = tokens[0], tokens[1]
+
 	refreshToken, err := jwt.Parse(oldRefreshToken, utils.GetRefreshSecret)
 	if err != nil {
-		log.Println("REFRESH1: ", err)
+		log.Println(err)
 		json.NewEncoder(w).Encode(responses.TOKEN_ERROR)
 		return
 	}
 
+	// ** refresh_token is valid
 	if refreshToken.Valid {
-
-		// ** 1) check user_id s are the same (for both tokens)
-		// ** 2) give tokens with a user_id the same as that of the access_token
-		// ** 3) check access_token expired less than 30 secs ago.
-
-		// if a bad guy only has someones refresh token he will not be able to
-		// get access to the victim's account. (1)
-
-		// if we give a new pair of tokens with user_id of a refresh_token.
-		// the bad guy will have the access to the victim's account
-		// with JUST a refresh token. (2)
-
-		// security :) (3)
-
-		// if the bad guy has only the refresh token. he will not be able to get a
-		// new pair back (1)
-
-		// if the bad guy has both the tokens. it is f***ed up.
-
-		// TODO...
-		/*
-			 ! BOOM
-				refreshTokenUserId, err := strconv.ParseInt(utils.GetUserIdFromTokenPayload([]byte(oldRefreshToken)), 10, 64)
-				if err != nil {
-					fmt.Println(err)
-					w.WriteHeader(500)
-					return
-				}
-				accessTokenUserId, err := strconv.ParseInt(utils.GetUserIdFromTokenPayload([]byte(oldAccessToken)), 10, 64)
-				if err != nil {
-					fmt.Println(err)
-					w.WriteHeader(500)
-					return
-				}
-
-				if refreshTokenUserId == accessTokenUserId {
-					fmt.Println("SAME")
-					fmt.Println("REFRESH USER ID: ", refreshTokenUserId)
-					fmt.Println("ACCESS USER ID: ", accessTokenUserId)
-				}
-		*/
-		fmt.Println("REFRESH TOKEN VALID")
-		decodedRefreshTokenPayload, err := jwt.DecodeSegment(strings.Split(oldRefreshToken, ".")[1])
+		decodedRefreshTokenPayload, err := jwt.DecodeSegment(utils.GetTokenPayload(oldRefreshToken))
 		if err != nil {
-			log.Println("REFRESH2: ", err)
+			log.Println(err)
 		}
-		decodedAccessTokenPayload, err := jwt.DecodeSegment(strings.Split(oldAccessToken, ".")[1])
+
+		decodedAccessTokenPayload, err := jwt.DecodeSegment(utils.GetTokenPayload(oldAccessToken))
 		if err != nil {
-			log.Println("REFRESH2: ", err)
+			log.Println(err)
 		}
-		unixRefreshExp, err := utils.ConvertStringToUnix(utils.GetExpTimeFromTokenPayload(decodedRefreshTokenPayload))
-		if err != nil {
-			fmt.Println(err)
-			w.WriteHeader(500)
-			return
-		}
+
 		unixAccessExp, err := utils.ConvertStringToUnix(utils.GetExpTimeFromTokenPayload(decodedAccessTokenPayload))
 		if err != nil {
 			fmt.Println(err)
@@ -113,7 +52,41 @@ func SendTokenPair(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 			return
 		}
 
-		fmt.Println("Access Token Unix Exp: ", unixAccessExp)
-		fmt.Println("Refresh Token Unix Exp: ", unixRefreshExp)
+		refreshTokenUserId, err := utils.GetUserIdFromTokenPayload([]byte(decodedRefreshTokenPayload))
+		if refreshTokenUserId < 1 || err != nil {
+			w.WriteHeader(500)
+			return
+		}
+		accessTokenUserId, err := utils.GetUserIdFromTokenPayload([]byte(decodedAccessTokenPayload))
+		if accessTokenUserId < 1 || err != nil {
+			w.WriteHeader(500)
+			return
+		}
+
+		// * check user_id s are the same (for both tokens)
+		if refreshTokenUserId != accessTokenUserId {
+			w.WriteHeader(401)
+			return
+		}
+		// * check access_token expired less than 30 secs ago
+		if secondsPassed := time.Since(unixAccessExp).Seconds(); secondsPassed > 30 {
+			w.WriteHeader(401)
+			json.NewEncoder(w).Encode(responses.ACCESS_TOKEN_TOO_OLD)
+			return
+		}
+		// * give tokens with a user_id the same as that of the access_token
+		tokenPair, err := utils.NewTokenPair(int(accessTokenUserId))
+		if err != nil {
+			w.WriteHeader(500)
+			return
+		}
+
+		json.NewEncoder(w).Encode(
+			map[string]string{
+				"new_refresh_token": tokenPair[1],
+				"new_access_token":  tokenPair[0],
+			},
+		)
+
 	}
 }

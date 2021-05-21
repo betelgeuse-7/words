@@ -5,7 +5,6 @@ create table users (
     email varchar(150) not null unique,
     password varchar(150) not null,
     registered_at timestamp not null,
-    last_logged_in timestamp
 );
 
 create table definitions (
