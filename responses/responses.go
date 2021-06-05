@@ -1,13 +1,27 @@
 package responses
 
+import (
+	"encoding/json"
+	"net/http"
+)
+
+type response struct {
+	Title, Message string
+}
+
+// send a response back, in json format.
+func (r *response) Send(w http.ResponseWriter) {
+	json.NewEncoder(w).Encode(r)
+}
+
 var (
-	CHECK_HEADER_FAIL    = map[string]string{"err": "header invalid"}
-	REGISTER_FAIL        = map[string]string{"err": "register failed. check credentials"}
-	REGISTER_SUCCESS     = map[string]string{"msg": "register successfull"}
-	LOGIN_FAIL           = map[string]string{"err": "login failed. check credentials"}
-	MISSING_CREDENTIALS  = map[string]string{"err": "missing credentials"}
-	EMAIL_INVALID        = map[string]string{"err": "e-mail invalid"}
-	SERVER_ERROR         = map[string]string{"err": "server error"}
-	TOKEN_ERROR          = map[string]string{"err": "token error"}
-	ACCESS_TOKEN_TOO_OLD = map[string]string{"err": "access_token expired more than 30 seconds ago"}
+	CHECK_HEADER_FAIL    response = response{"err", "header invalid"}
+	REGISTER_FAIL        response = response{"err", "register failed"}
+	REGISTER_SUCCESS     response = response{"msg", "register successful"}
+	LOGIN_FAIL           response = response{"err", "login failed. check credentials"}
+	MISSING_CREDENTIALS  response = response{"err", "missing credentials"}
+	EMAIL_INVALID        response = response{"err", "email invalid"}
+	SERVER_ERROR         response = response{"err", "server error"}
+	TOKEN_ERROR          response = response{"err", "token error"}
+	ACCESS_TOKEN_TOO_OLD response = response{"err", "access_token expired more than 30 seconds ago"}
 )

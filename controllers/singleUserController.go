@@ -1,13 +1,13 @@
 package controllers
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/betelgeuse-7/words/models"
 	"github.com/betelgeuse-7/words/responses"
+	"github.com/betelgeuse-7/words/utils"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -17,14 +17,13 @@ func SingleUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		log.Println(err)
 		return
 	}
-
 	user, err := models.GetSingleUser(int(id))
 
 	if err != nil {
-		log.Println(err, "  <|>  SingleUser")
-		json.NewEncoder(w).Encode(responses.SERVER_ERROR)
+		log.Println("single user err: ", err)
+		responses.SERVER_ERROR.Send(w)
 		return
 	}
 
-	json.NewEncoder(w).Encode(user)
+	utils.JSON(w, user)
 }

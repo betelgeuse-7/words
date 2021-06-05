@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -14,22 +12,20 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+// send a new refresh and access token pair
 func SendTokenPair(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var oldAccessToken, oldRefreshToken string
 
 	tokens, err := utils.GetTokensFromCookies(r)
 	if err != nil {
-		fmt.Println("oldAccessToken: ", err)
 		w.WriteHeader(401)
 		return
 	}
-
 	oldAccessToken, oldRefreshToken = tokens[0], tokens[1]
 
 	refreshToken, err := jwt.Parse(oldRefreshToken, utils.GetRefreshSecret)
 	if err != nil {
-		log.Println(err)
-		json.NewEncoder(w).Encode(responses.TOKEN_ERROR)
+		responses.TOKEN_ERROR.Send(w)
 		return
 	}
 
@@ -47,7 +43,6 @@ func SendTokenPair(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 
 		unixAccessExp, err := utils.ConvertStringToUnix(utils.GetExpTimeFromTokenPayload(decodedAccessTokenPayload))
 		if err != nil {
-			fmt.Println(err)
 			w.WriteHeader(500)
 			return
 		}
@@ -68,10 +63,11 @@ func SendTokenPair(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 			w.WriteHeader(401)
 			return
 		}
+
 		// * check access_token expired less than 30 secs ago
 		if secondsPassed := time.Since(unixAccessExp).Seconds(); secondsPassed > 30 {
 			w.WriteHeader(401)
-			json.NewEncoder(w).Encode(responses.ACCESS_TOKEN_TOO_OLD)
+			responses.ACCESS_TOKEN_TOO_OLD.Send(w)
 			return
 		}
 		// * give tokens with a user_id the same as that of the access_token
@@ -81,12 +77,9 @@ func SendTokenPair(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 			return
 		}
 
-		json.NewEncoder(w).Encode(
-			map[string]string{
-				"new_refresh_token": tokenPair[1],
-				"new_access_token":  tokenPair[0],
-			},
-		)
-
+		utils.JSON(w, map[string]string{
+			"new_refresh_token": tokenPair[1],
+			"new_access_token":  tokenPair[0],
+		})
 	}
 }

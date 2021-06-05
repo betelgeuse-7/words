@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -19,36 +17,31 @@ func GetExpTimeFromTokenPayload(payload []byte) string {
 func ConvertStringToUnix(value string) (time.Time, error) {
 	intValue, err := strconv.ParseInt(value, 10, 64)
 	if err != nil {
-		log.Println("convertToUnix: ", err)
 		return time.Time{}, err
 	}
 	unixTime := time.Unix(intValue, 0)
 	return unixTime, nil
 }
 
+// get user_id from a token's payload
 func GetUserIdFromTokenPayload(payload []byte) (int, error) {
 	stringPayload := string(payload)
 	decodedStringPayload, err := jwt.DecodeSegment(stringPayload)
 	if err != nil {
-		fmt.Println("GetUserIdFromTokenPayload ERR: ", err)
 		return 0, err
 	}
 	decodedStringPayload = []byte(strings.Replace(string(decodedStringPayload), "{", "", 1))
 	decodedStringPayload = []byte(strings.Replace(string(decodedStringPayload), "}", "", 1))
 
-	fmt.Println(strings.Split(strings.Split(string(decodedStringPayload), ",")[2], ":"))
-
 	userId, err := strconv.ParseInt(strings.Split(strings.Split(string(decodedStringPayload), ",")[2], ":")[1], 0, 64)
 	if err != nil {
-		fmt.Println("parseToken.go#GetUserIdFromTokenPayload: ", err)
 		return 0, err
 	}
-
-	fmt.Println("GetUserIdFromTokenPayload <msg> Got user_id: ", userId)
 
 	return int(userId), nil
 }
 
+// get a token's payload
 func GetTokenPayload(token string) string {
 	return strings.Split(token, ".")[1]
 }

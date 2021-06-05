@@ -17,43 +17,47 @@ type newUser struct {
 	FirstName, LastName, Email, Password string
 }
 
+func (n *newUser) setPassword(password string) {
+	n.Password = password
+}
+
 func RegisterController(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	wantHeader := map[string]string{
 		"Content-Type": "application/json",
 	}
 	if ok, msg := utils.CheckRequestHeader(wantHeader, r.Header); ok && msg == "ok" {
 		var new newUser
+
 		if err := json.NewDecoder(r.Body).Decode(&new); err != nil {
-			json.NewEncoder(w).Encode(responses.REGISTER_FAIL)
+			responses.REGISTER_FAIL.Send(w)
 			return
 		}
 		if err := utils.LenGreaterThanZero(new.FirstName, new.LastName, new.Email, new.Password); err != nil {
-			json.NewEncoder(w).Encode(responses.MISSING_CREDENTIALS)
+			responses.MISSING_CREDENTIALS.Send(w)
 			return
 		}
 		if err := utils.ValidateEmail(new.Email); err != nil {
-			json.NewEncoder(w).Encode(responses.EMAIL_INVALID)
+			responses.EMAIL_INVALID.Send(w)
 			return
 		}
 
 		// * encrypt password
 		password, err := bcrypt.GenerateFromPassword([]byte(new.Password), 10)
 		if err != nil {
-			log.Println(err)
-			json.NewEncoder(w).Encode(responses.SERVER_ERROR)
+			responses.SERVER_ERROR.Send(w)
 			return
 		}
-		new.Password = string(password)
+		new.setPassword(string(password))
 		registeredAt := time.Now()
 
 		if err := models.Register(new.FirstName, new.LastName, new.Email, new.Password, registeredAt); err != nil {
 			log.Println("Register controller", err)
-			json.NewEncoder(w).Encode(responses.SERVER_ERROR)
+			responses.SERVER_ERROR.Send(w)
 			return
 		}
-		json.NewEncoder(w).Encode(responses.REGISTER_SUCCESS)
+		responses.REGISTER_SUCCESS.Send(w)
 	} else {
-		json.NewEncoder(w).Encode(responses.CHECK_HEADER_FAIL)
+		responses.CHECK_HEADER_FAIL.Send(w)
 		return
 	}
 }
