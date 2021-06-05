@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/betelgeuse-7/words/models"
@@ -21,48 +20,43 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		"Content-Type": "application/json",
 	}
 	if res, msg := utils.CheckRequestHeader(wantHeader, r.Header); !res && msg != "ok" {
-		json.NewEncoder(w).Encode(responses.CHECK_HEADER_FAIL)
+		responses.CHECK_HEADER_FAIL.Send(w)
 		return
 	}
 	lc := loginCred{}
 
 	json.NewDecoder(r.Body).Decode(&lc)
 
-	fmt.Println("LC: ", lc)
 	if err := utils.LenGreaterThanZero(lc.Email, lc.Password); err != nil {
-		json.NewEncoder(w).Encode(responses.MISSING_CREDENTIALS)
+		responses.MISSING_CREDENTIALS.Send(w)
 		return
 	}
 	if err := utils.ValidateEmail(lc.Email); err != nil {
-		json.NewEncoder(w).Encode(responses.EMAIL_INVALID)
+		responses.EMAIL_INVALID.Send(w)
 		return
 	}
 
 	creds, err := models.GetUserCredsByEmail(lc.Email)
 	if err != nil {
-		json.NewEncoder(w).Encode(responses.LOGIN_FAIL)
+		responses.LOGIN_FAIL.Send(w)
 		return
 	}
 
 	if userId, err := creds.UserId, utils.LenGreaterThanZero(creds.Password); userId < 1 || err != nil {
-		json.NewEncoder(w).Encode(responses.LOGIN_FAIL)
+		responses.LOGIN_FAIL.Send(w)
 		return
 	}
 
-	fmt.Println("CREDS:", creds)
-
 	if err := bcrypt.CompareHashAndPassword([]byte(creds.Password), []byte(lc.Password)); err != nil {
-		json.NewEncoder(w).Encode(responses.LOGIN_FAIL)
+		responses.LOGIN_FAIL.Send(w)
 		return
 	}
 
 	refreshToken, _ := utils.NewToken(int(creds.UserId), "refresh")
 	accessToken, _ := utils.NewToken(int(creds.UserId), "access")
 
-	json.NewEncoder(w).Encode(map[string]string{
+	utils.JSON(w, map[string]string{
 		"refresh_token": refreshToken,
 		"access_token":  accessToken,
 	})
-
-	// TODO last_logged_in
 }
