@@ -11,10 +11,37 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+/*
+type Credential interface {
+	Validate() error
+}
+*/
 type loginCred struct {
 	Email, Password string
 }
 
+/**
+errType Codes:
+	0: OK
+	1: MISSING_CREDENTIALS
+	2: EMAIL_INVALID
+	3: LOGIN_FAIL
+*/
+/*
+func (lc *loginCred) Validate() int {
+	var errType int
+
+	if err := utils.LenGreaterThanZero(lc.Email, lc.Password); err != nil {
+		errType = 1
+	}
+	if err := utils.ValidateEmail(lc.Email); err != nil {
+		errType = 2
+	}
+
+	errType = 0
+	return errType
+}
+*/
 func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	wantHeader := map[string]string{
 		"Content-Type": "application/json",

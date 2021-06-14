@@ -49,6 +49,7 @@ func NewToken(userId int, kind string) (string, error) {
 		return token, nil
 	}
 	return "", errors.New("invalid kind")
+
 }
 
 // return new access and refresh tokens
