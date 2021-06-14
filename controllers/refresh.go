@@ -47,12 +47,12 @@ func SendTokenPair(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 			return
 		}
 
-		refreshTokenUserId, err := utils.GetUserIdFromTokenPayload([]byte(decodedRefreshTokenPayload))
+		refreshTokenUserId, err := utils.GetUserIdFromTokenPayload(decodedRefreshTokenPayload)
 		if refreshTokenUserId < 1 || err != nil {
 			w.WriteHeader(500)
 			return
 		}
-		accessTokenUserId, err := utils.GetUserIdFromTokenPayload([]byte(decodedAccessTokenPayload))
+		accessTokenUserId, err := utils.GetUserIdFromTokenPayload(decodedAccessTokenPayload)
 		if accessTokenUserId < 1 || err != nil {
 			w.WriteHeader(500)
 			return

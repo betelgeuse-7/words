@@ -6,7 +6,8 @@ import (
 )
 
 type response struct {
-	Title, Message string
+	Title string `json:"title"`
+	Message string  `json:"message"`
 }
 
 // send a response back, in json format.

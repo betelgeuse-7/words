@@ -1,11 +1,10 @@
 package utils
 
 import (
+	"log"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/dgrijalva/jwt-go"
 )
 
 // return exp time in string format from the payload of a token
@@ -25,16 +24,12 @@ func ConvertStringToUnix(value string) (time.Time, error) {
 
 // get user_id from a token's payload
 func GetUserIdFromTokenPayload(payload []byte) (int, error) {
-	stringPayload := string(payload)
-	decodedStringPayload, err := jwt.DecodeSegment(stringPayload)
-	if err != nil {
-		return 0, err
-	}
-	decodedStringPayload = []byte(strings.Replace(string(decodedStringPayload), "{", "", 1))
-	decodedStringPayload = []byte(strings.Replace(string(decodedStringPayload), "}", "", 1))
+	stringPayload := getRidOfCurlies(string(payload))
+	userIdStr := strings.Split(stringPayload, ":")[len(strings.Split(stringPayload, ":"))-1]
 
-	userId, err := strconv.ParseInt(strings.Split(strings.Split(string(decodedStringPayload), ",")[2], ":")[1], 0, 64)
+	userId, err := strconv.ParseInt(userIdStr, 10, 64)
 	if err != nil {
+		log.Println("gusid: ", err)
 		return 0, err
 	}
 
@@ -44,4 +39,11 @@ func GetUserIdFromTokenPayload(payload []byte) (int, error) {
 // get a token's payload
 func GetTokenPayload(token string) string {
 	return strings.Split(token, ".")[1]
+}
+
+func getRidOfCurlies(token string) string {
+	new := strings.Replace(token, "{", "", 1)
+	new = strings.Replace(new, "}", "", 1)
+
+	return new
 }
