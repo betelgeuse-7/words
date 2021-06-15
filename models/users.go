@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"log"
 	"time"
 )
@@ -76,7 +75,6 @@ func GetUserCredsByEmail(email string) (userCred, error) {
 
 	err := row.Scan(&user.UserId, &user.Password)
 	if err != nil {
-		fmt.Println(err)
 		return userCred{}, err
 	}
 	return user, nil

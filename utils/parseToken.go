@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 // return exp time in string format from the payload of a token
@@ -22,10 +24,17 @@ func ConvertStringToUnix(value string) (time.Time, error) {
 	return unixTime, nil
 }
 
+// TODO make this stable. (GetUserIdFromTokenPayload)
+
 // get user_id from a token's payload
 func GetUserIdFromTokenPayload(payload []byte) (int, error) {
-	stringPayload := getRidOfCurlies(string(payload))
-	userIdStr := strings.Split(stringPayload, ":")[len(strings.Split(stringPayload, ":"))-1]
+	payload, err := jwt.DecodeSegment(getRidOfCurlies(string(payload)))
+	if err != nil {
+		return 0, err
+	}
+	stringPayload := string(payload)
+	//  :O
+	userIdStr := strings.Replace(strings.Split(stringPayload, ":")[len(strings.Split(stringPayload, ":"))-1], "}", "", 1)
 
 	userId, err := strconv.ParseInt(userIdStr, 10, 64)
 	if err != nil {

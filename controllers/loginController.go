@@ -11,37 +11,24 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-/*
-type Credential interface {
-	Validate() error
-}
-*/
 type loginCred struct {
 	Email, Password string
 }
 
-/**
-errType Codes:
-	0: OK
-	1: MISSING_CREDENTIALS
-	2: EMAIL_INVALID
-	3: LOGIN_FAIL
-*/
 /*
-func (lc *loginCred) Validate() int {
-	var errType int
-
+* check login credentials' validity.
+* return 0 for no error, 1 for MISSING_CREDENTIALS, and 2 for EMAIL_INVALID.
+ */
+func (lc loginCred) Validate() uint {
 	if err := utils.LenGreaterThanZero(lc.Email, lc.Password); err != nil {
-		errType = 1
+		return 1
 	}
 	if err := utils.ValidateEmail(lc.Email); err != nil {
-		errType = 2
+		return 2
 	}
-
-	errType = 0
-	return errType
+	return 0
 }
-*/
+
 func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	wantHeader := map[string]string{
 		"Content-Type": "application/json",
@@ -54,22 +41,25 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	json.NewDecoder(r.Body).Decode(&lc)
 
-	if err := utils.LenGreaterThanZero(lc.Email, lc.Password); err != nil {
+	validateErrorCode := lc.Validate()
+	switch validateErrorCode {
+	case 1:
 		responses.MISSING_CREDENTIALS.Send(w)
 		return
-	}
-	if err := utils.ValidateEmail(lc.Email); err != nil {
+	case 2:
 		responses.EMAIL_INVALID.Send(w)
 		return
 	}
 
 	creds, err := models.GetUserCredsByEmail(lc.Email)
-	if err != nil {
+	if err != nil { // there's an internal error (db)
+		w.WriteHeader(500)
 		responses.LOGIN_FAIL.Send(w)
 		return
 	}
 
-	if userId, err := creds.UserId, utils.LenGreaterThanZero(creds.Password); userId < 1 || err != nil {
+	// there's no such user record in the db
+	if creds.UserId == 0 {
 		responses.LOGIN_FAIL.Send(w)
 		return
 	}
