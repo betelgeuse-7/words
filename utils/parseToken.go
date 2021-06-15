@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -28,21 +27,30 @@ func ConvertStringToUnix(value string) (time.Time, error) {
 
 // get user_id from a token's payload
 func GetUserIdFromTokenPayload(payload []byte) (int, error) {
-	payload, err := jwt.DecodeSegment(getRidOfCurlies(string(payload)))
+	tokenString := string(payload)
+	token, err := jwt.ParseWithClaims(tokenString, &TokenClaims{}, GetSecret)
 	if err != nil {
 		return 0, err
 	}
-	stringPayload := string(payload)
-	//  :O
-	userIdStr := strings.Replace(strings.Split(stringPayload, ":")[len(strings.Split(stringPayload, ":"))-1], "}", "", 1)
+	return int(token.Claims.(TokenClaims).UserId), nil
 
-	userId, err := strconv.ParseInt(userIdStr, 10, 64)
-	if err != nil {
-		log.Println("gusid: ", err)
-		return 0, err
-	}
+	/*
+		payload, err := jwt.DecodeSegment(getRidOfCurlies(string(payload)))
+		if err != nil {
+			return 0, err
+		}
+		stringPayload := string(payload)
+		//  :O
+		userIdStr := strings.Replace(strings.Split(stringPayload, ":")[len(strings.Split(stringPayload, ":"))-1], "}", "", 1)
 
-	return int(userId), nil
+		userId, err := strconv.ParseInt(userIdStr, 10, 64)
+		if err != nil {
+			log.Println("gusid: ", err)
+			return 0, err
+		}
+
+		return int(userId), nil
+	*/
 }
 
 // get a token's payload
@@ -50,9 +58,11 @@ func GetTokenPayload(token string) string {
 	return strings.Split(token, ".")[1]
 }
 
+/*
 func getRidOfCurlies(token string) string {
 	new := strings.Replace(token, "{", "", 1)
 	new = strings.Replace(new, "}", "", 1)
 
 	return new
 }
+*/

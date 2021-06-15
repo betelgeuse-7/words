@@ -17,7 +17,7 @@ func ProtectRoute(endpoint func(w http.ResponseWriter, r *http.Request, ps httpr
 		for _, v := range cookies {
 			if v.Name == constants.ACCESS_TOKEN_COOKIE_NAME {
 				if v.Value != "" {
-					token, err := jwt.Parse(v.Value, utils.GetAccessSecret)
+					token, err := jwt.Parse(v.Value, utils.GetSecret)
 					if err != nil {
 						fmt.Println("PROTECT ROUTE: ", err)
 						w.WriteHeader(401)

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -37,6 +38,14 @@ func (t TToken) checkExpired() error {
 	return nil
 }
 
+func (t TToken) getUserId() (int, error) {
+	userId, err := utils.GetUserIdFromTokenPayload([]byte(t))
+	if err != nil {
+		return 0, err
+	}
+	return userId, nil
+}
+
 // send a new refresh and access token pair
 func SendTokenPair(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	tokens, err := utils.GetTokensFromCookies(r)
@@ -46,7 +55,7 @@ func SendTokenPair(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	}
 	var oldAccessToken, oldRefreshToken TToken = TToken(tokens[0]), TToken(tokens[1])
 
-	refreshToken, err := jwt.Parse(string(oldRefreshToken), utils.GetRefreshSecret)
+	refreshToken, err := jwt.Parse(string(oldRefreshToken), utils.GetSecret)
 	if err != nil {
 		responses.TOKEN_ERROR.Send(w)
 		return
@@ -55,13 +64,10 @@ func SendTokenPair(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	// ** refresh_token is valid
 	if refreshToken.Valid {
 		// * check if the user is eligible to get back a token pair
-		refreshTokenPayload, err := oldRefreshToken.getPayload()
-		if err != nil {
-			log.Println(err)
-		}
-		accessTokenPayload, err := oldAccessToken.getPayload()
-		if err != nil {
-			log.Println(err)
+		refreshTokenPayload, err1 := oldRefreshToken.getPayload()
+		accessTokenPayload, err2 := oldAccessToken.getPayload()
+		if err1 != nil || err2 != nil {
+			log.Println("err1: ", err1, "err2: ", err2)
 		}
 		err = TToken(accessTokenPayload).checkExpired()
 		if err != nil {
@@ -70,13 +76,10 @@ func SendTokenPair(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 			return
 		}
 
-		refreshTokenUserId, err := utils.GetUserIdFromTokenPayload(refreshTokenPayload)
-		if refreshTokenUserId < 1 || err != nil {
-			w.WriteHeader(500)
-			return
-		}
-		accessTokenUserId, err := utils.GetUserIdFromTokenPayload(accessTokenPayload)
-		if accessTokenUserId < 1 || err != nil {
+		refreshTokenUserId, err1 := TToken(refreshTokenPayload).getUserId()
+		accessTokenUserId, err2 := TToken(accessTokenPayload).getUserId()
+		if err1 != nil || err2 != nil {
+			fmt.Println("errrr", err1, err2)
 			w.WriteHeader(500)
 			return
 		}
